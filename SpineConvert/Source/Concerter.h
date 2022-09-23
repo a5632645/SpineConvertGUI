@@ -11,6 +11,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include <Windows.h>
+#include "storger.h"
 
 class Concerter
 {
@@ -34,7 +35,8 @@ public:
 
     static void UpdateConventers();
 
-    Error StartConvent(juce::String path);
-    float GetSkelVersion(juce::FileInputStream& streamIn);
+    Error StartConvent(storger::Path& p);
+    static int GetSkelVersion(juce::StringRef filePath);
+    inline static bool IsExistConverter(int version);
 private:
 };

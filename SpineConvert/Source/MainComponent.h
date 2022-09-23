@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "FileWindows.h"
 
+
 class ChineseLookAndFeel : public juce::LookAndFeel_V4
 {
 public:

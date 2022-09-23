@@ -1,20 +1,12 @@
 #include "itemList.h"
+#include "Concerter.h"
 
 //==============================================================================
-itemList::itemList(const juce::OwnedArray<Path>& strings)
-	:m_lib(strings),
-	m_chooser(new juce::FileChooser(L"选择skel文件",juce::File(),"*.skel")), m_listener(nullptr)
+itemList::itemList(storger& toBind)
+	:m_lib(toBind),
+	m_chooser(new juce::FileChooser(L"选择skel文件",juce::File(),"*.skel"))
 {
-	/*for (auto& item : strings) {
-		m_items.add(new itemInList(item));
-	}
-	for (auto* item : m_items) {
-		addAndMakeVisible(*item);
-		item->SetListener(this);
-	}*/
-	/*for (auto* item : strings) {
-		AddItem(item->filePath);
-	}*/
+	
 }
 
 void itemList::paint(juce::Graphics& g)
@@ -30,67 +22,52 @@ void itemList::resized()
 		item->setBounds(bound);
 		bound.translate(0, itemHeight);
 	}
+
+	setBounds(getBounds().withHeight(itemHeight * GetNumItems()));
 }
 
 //==============================================================================
 void itemList::ToggleButtonChanged(itemInList* item)
 {
-	if (m_listener != nullptr) {		
-		m_listener->ItemToggleChanged(m_items.indexOf(item), item->GetState());
-	}
-}
-
-void itemList::TextEditorChanged(itemInList* item)
-{
-	if (m_listener != nullptr) {
-		m_listener->ItemTextChanged(m_items.indexOf(item), item->GetText());
+	auto i = m_lib.Get(item->GetPath());
+	if (i != nullptr) {
+		i->shouldDoConvente = item->IsSelected();
 	}
 }
 
 void itemList::SelectButtonClicked(itemInList* item)
 {
-	m_chooser->launchAsync(juce::FileBrowserComponent::openMode, [this,item](const juce::FileChooser& c) mutable {
+	m_chooser->launchAsync(juce::FileBrowserComponent::openMode, [this, item](const juce::FileChooser& c) mutable {
 		if (c.getResult() != juce::File()) {
 			/* file choosed */
 			auto path = c.getResult().getFullPathName();
-			for (auto* item : m_lib) {
-				if (item->filePath == path) {
-					return;
-				}
-			}
-
-			item->GetTextEditor().setText(path);
-			item->GetToggleButton().setToggleState(true, juce::sendNotification);
-			item->SetComplete(false);
-			item->SetInfoText(L"未开始");
-
-			if (m_listener != nullptr) {
-				m_listener->ItemTextChanged(m_items.indexOf(item), path);
+			auto i = m_lib.Get(item->GetPath());
+			if (i != nullptr) {
+				i->filePath = path;
+				item->SetPath(path);
+				item->SetStatus(itemInList::ConvertStauts::WaitConvert);
 			}
 		}
 		});
 }
 
 //==============================================================================
-void itemList::AddItem(juce::StringRef text)
+void itemList::AddItem(juce::StringRef path)
 {
-	if (m_listener) {
-		for (auto* item : m_lib) {
-			if (item->filePath == text) {
-				return;
-			}
-		}
+	if (m_lib.isExist(path)) {
+		return;
 	}
 
-	itemInList* temp = new itemInList(text);
+	auto* newPath = new storger::Path{ juce::String(path),true,Concerter::GetSkelVersion(path) };
+	m_lib.AddPath(newPath);
+
+	itemInList* temp = new itemInList(newPath->filePath, newPath->version);
 	addAndMakeVisible(*temp);
 	temp->SetListener(this);
-	temp->GetToggleButton().setToggleState(true, juce::dontSendNotification);
+	temp->SetStatus(itemInList::ConvertStauts::WaitConvert);
 	m_items.add(temp);
 
-	if (m_listener != nullptr) {
-		m_listener->ItemAdded(text);
-	}
+	resized();
 }
 
 void itemList::AddItemFromChooserBox()
@@ -107,59 +84,40 @@ void itemList::AddItemFromChooserBox()
 	});
 }
 
-void itemList::RemoveItem(int index)
-{
-	removeChildComponent(index);
-	m_items.remove(index);
-
-	if (m_listener != nullptr) {
-		m_listener->ItemDeleted(index);
-	}
-}
-
-void itemList::RemoveItem(const Path* p)
-{
-	RemoveItem(m_lib.indexOf(p));
-}
-
-itemInList* itemList::GetItem(int index)
-{
-	return m_items[index];
-}
-
 //==============================================================================
 void itemList::CancelAllSelect()
 {
 	for (auto* item : m_items) {
-		auto& toggle = item->GetToggleButton();
-		toggle.setToggleState(false, juce::sendNotification);
+		item->SetSelected(false);
 	}
 }
 
 void itemList::SelectAll()
 {
 	for (auto* item : m_items) {
-		auto& toggle = item->GetToggleButton();
-		toggle.setToggleState(true, juce::sendNotification);
+		item->SetSelected(true);
 	}
 }
 
 void itemList::AntiSelect()
 {
 	for (auto* item : m_items) {
-		auto& toggle = item->GetToggleButton();
-		toggle.setToggleState(!toggle.getToggleState(), juce::sendNotification);
+		item->SetSelected(!item->IsSelected());
 	}
 }
 
 void itemList::RemoveSelect()
 {
 	for (auto* item : m_items) {
-		if (item->GetState()) {
-			auto index = m_items.indexOf(item);
-			RemoveItem(index);
+		if (item->IsSelected()) {
+			
+			m_lib.RemovePath(item->GetPath());
+			m_items.removeObject(item, true);
+
 		}
 	}
+
+	resized();
 }
 
 //==============================================================================

@@ -1,43 +1,62 @@
 #pragma once
 #include <JuceHeader.h>
+#include "storger.h"
 
-extern std::unordered_map<float, juce::String> g_TranslatorPath;
+extern std::unordered_map<int, juce::String> g_TranslatorPath;
 
 class itemInList : public juce::Component,
-				   public juce::ToggleButton::Listener,
-				   public juce::TextEditor::Listener
+				   public juce::ToggleButton::Listener
 {
 public:
 	//==============================================================================
-	itemInList(juce::StringRef text)
+	enum class ConvertStauts
+	{
+		Complete,
+		CannotFindConventer,
+		UnknowVersion,
+		FailedLaunchProcess,
+		WaitConvert
+	};
+
+	//==============================================================================
+	itemInList(juce::StringRef path, int versionIn)
 		: m_listener(nullptr), m_button(L"...")
 	{
+		
+
 		addAndMakeVisible(m_toggle);
-		addAndMakeVisible(m_text);
+		addAndMakeVisible(m_status);
 		addAndMakeVisible(m_button);
-		addAndMakeVisible(m_info);
+		addAndMakeVisible(m_path);
+		addAndMakeVisible(m_version);
 
 		m_toggle.addListener(this);
-		m_text.addListener(this);
 		m_button.addListener(this);
 
-		m_text.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
-		m_text.setText(text, false);
-		m_text.setReadOnly(true);
+		m_path.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
+		m_path.setText(path, juce::dontSendNotification);
 		
-		m_info.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
+		m_status.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
+		
+		m_version.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
 
-		SetComplete(false);
-		SetInfoText(L"未开始");
+		juce::String v{ "ver: " }; v << versionIn;
+		m_version.setText(v, juce::dontSendNotification);
+
+		SetStatus(itemInList::ConvertStauts::WaitConvert);
 	};
 
 	void resized() override
 	{
-		constexpr auto buttonWith = 50;
+		// 口[ version ][ path ][ status ][###]
+		constexpr auto buttonWidth = 50;
+		constexpr auto versionWidth = 60;
+		constexpr auto statusWidth = 120;
 		m_toggle.setBounds(0, 0, getHeight(), getHeight());
-		m_text.setBounds(getHeight(), 0, getWidth() - getHeight() - buttonWith, getHeight());
-		m_button.setBounds(getWidth() - buttonWith, 0, buttonWith, getHeight());
-		m_info.setBounds(getHeight(), 10, getWidth() - getHeight() - buttonWith, getHeight());
+		m_version.setBounds(m_toggle.getBounds().getRight(), 0, versionWidth, getHeight());
+		m_button.setBounds(getWidth() - buttonWidth, 0, buttonWidth, getHeight());
+		m_status.setBounds(m_button.getBounds().getX() - statusWidth, 0, statusWidth, getHeight());
+		m_path.setBounds(m_version.getBounds().getRight(), 0, m_status.getBounds().getX() - m_version.getBounds().getRight(), getHeight());
 	}
 
 	//==============================================================================
@@ -54,45 +73,84 @@ public:
 
 	}
 
-	void textEditorReturnKeyPressed(juce::TextEditor& editor)
-	{
-		if (m_listener != nullptr) {
-			m_listener->TextEditorChanged(this);
-		}
-	}
-
 	//==============================================================================
-	juce::ToggleButton& GetToggleButton()
-	{
-		return m_toggle;
-	}
-
-	juce::TextEditor& GetTextEditor()
-	{
-		return m_text;
-	}
-
-	bool GetState()
+	bool IsSelected() const
 	{
 		return m_toggle.getToggleState();
 	}
 
-	juce::String GetText()
+	void SetSelected(bool newStatus)
 	{
-		return m_text.getText();
+		m_toggle.setToggleState(newStatus, juce::sendNotification);
 	}
 
-	void SetInfoText(juce::String text)
-	{
-		m_info.setText(text, juce::dontSendNotification);
-	}
 	//==============================================================================
-	void SetComplete(bool complete)
+	juce::String GetPath() const
 	{
-		m_text.setColour(juce::TextEditor::ColourIds::backgroundColourId,
-			complete ? juce::Colours::darkgreen : juce::Colours::red
-		);
-		m_text.repaint();
+		return m_path.getText();
+	}
+
+	void SetPath(const juce::StringRef newPath)
+	{
+		m_path.setText(newPath, juce::sendNotification);
+	}
+
+	//==============================================================================
+	void SetVersion(const float newVersion)
+	{
+		m_version.setText(juce::String{ newVersion }, juce::dontSendNotification);
+	}
+	
+	void SetStatus(ConvertStauts newStatus)
+	{
+		switch (newStatus)
+		{
+		case itemInList::ConvertStauts::Complete:
+
+			m_backGroundColor = juce::Colours::darkgreen;
+			m_status.setText(L"转换完成", juce::dontSendNotification);
+			SetSelected(false);
+
+			break;
+		case itemInList::ConvertStauts::CannotFindConventer:
+
+			m_backGroundColor = juce::Colours::orange;
+			m_status.setText(L"找不到对应版本的转换器", juce::dontSendNotification);
+
+			break;
+		case itemInList::ConvertStauts::UnknowVersion:
+
+			m_backGroundColor = juce::Colours::yellow;
+			m_status.setText(L"未知版本", juce::dontSendNotification);
+
+			break;
+		case itemInList::ConvertStauts::FailedLaunchProcess:
+
+			m_backGroundColor = juce::Colours::red;
+			m_status.setText(L"未成功调用转换器", juce::dontSendNotification);
+
+			break;
+		case itemInList::ConvertStauts::WaitConvert:
+
+			m_backGroundColor = juce::Colours::black;
+			m_status.setText(L"等待转换", juce::dontSendNotification);
+			SetSelected(true);
+
+			break;
+		}
+
+		repaint();
+	}
+
+	void paint(juce::Graphics& g) override
+	{
+		g.fillAll(m_backGroundColor);
+		g.setColour(juce::Colours::grey);
+
+		g.drawRect(m_toggle.getBounds(), 2.f);
+		g.drawRect(m_path.getBounds(), 2.f);
+		g.drawRect(m_version.getBounds(), 2.f);
+		g.drawRect(m_status.getBounds(), 2.f);
 	}
 
 	//==============================================================================
@@ -101,7 +159,6 @@ public:
 	public:
 		~Listener() {}
 		virtual void ToggleButtonChanged(itemInList* item) {}
-		virtual void TextEditorChanged(itemInList* item) {}
 		virtual void SelectButtonClicked(itemInList* item) {}
 	};
 	void SetListener(Listener* ls) { m_listener = ls; }
@@ -110,48 +167,41 @@ public:
 private:
 	Listener* m_listener;
 	juce::ToggleButton m_toggle;
-	juce::TextEditor   m_text;
+	juce::Label		   m_path;
+	juce::Label		   m_version;
+	juce::Label        m_status;
 	juce::TextButton   m_button;
-	juce::Label        m_info;
+
+	juce::Colour       m_backGroundColor;
 };
 
 //==============================================================================
 
 
 
-
+#include "storger.h"
 
 constexpr auto itemHeight = 36;
 class itemList : public juce::Component,
 				 public itemInList::Listener
 {
 public:
-	struct Path
-	{
-		juce::String filePath;
-		bool shouldDoConvente;
-	};
 
-	itemList(const juce::OwnedArray<Path>& strings);
+	itemList(storger& toBind);
 
 	void paint(juce::Graphics& g) override;
 	void resized() override;
 
 	//==============================================================================
 	void ToggleButtonChanged(itemInList* item);
-	void TextEditorChanged  (itemInList* item);
 	void SelectButtonClicked(itemInList* item);
 
 	//==============================================================================
 	void AddItem(juce::StringRef text);
 	void AddItemFromChooserBox();
-	void RemoveItem(int index);
-	void RemoveItem(const Path* p);
-
-	itemInList* GetItem(int index);
 
 	int GetNumItems() const { return m_items.size(); }
-
+	auto& GetItems() const { return m_items; }
 	//==============================================================================
 	void CancelAllSelect();
 	void SelectAll();
@@ -159,24 +209,9 @@ public:
 	void RemoveSelect();
 
 	//==============================================================================
-	class Listener
-	{
-	public:
-		~Listener(){}
-		virtual void ItemToggleChanged(int indexOfComponent, bool state){}
-		virtual void ItemTextChanged  (int indexOfComponent, juce::String text){}
-		virtual void ItemButtonChanged(int indexOfComponent){}
-		virtual void ItemAdded        (juce::String text){}
-		virtual void ItemDeleted	  (int indexOfComponenet){}
-	};
-	void SetListener(Listener* ls) { m_listener = ls; }
-
-	//==============================================================================
-	
 
 private:
-	const juce::OwnedArray<Path>& m_lib;
+	storger& m_lib;
 	std::unique_ptr<juce::FileChooser> m_chooser;
-	Listener* m_listener;
 	juce::OwnedArray<itemInList> m_items;
 };

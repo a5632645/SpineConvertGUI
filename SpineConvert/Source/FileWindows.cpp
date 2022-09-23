@@ -11,11 +11,11 @@
 #include <JuceHeader.h>
 #include "FileWindows.h"
 
-extern std::unordered_map<float, juce::String> g_TranslatorPath;
+extern std::unordered_map<int, juce::String> g_TranslatorPath;
 
 //==============================================================================
 FileWindows::FileWindows(Concerter& concerter)
-    :m_concerter(concerter), m_list(new itemList(this->m_paths)),
+    :m_concerter(concerter), m_list(new itemList(this->m_savedPaths)),
     m_add(L"添加文件"),
     m_antiSelect(L"反选"),
     m_cancelSelect(L"取消选择"),
@@ -30,7 +30,6 @@ FileWindows::FileWindows(Concerter& concerter)
     // initialise any special settings that your component needs.
     addAndMakeVisible(m_pathList);
     m_pathList.setViewedComponent(m_list);
-    m_list->SetListener(this);
 
     addAndMakeVisible(m_add);
     addAndMakeVisible(m_antiSelect);
@@ -56,25 +55,27 @@ FileWindows::FileWindows(Concerter& concerter)
         m_list->CancelAllSelect();
     };
     m_convert.onClick = [this]() {
+        auto& items = m_list->GetItems();
+        for (auto* i : items) {
+            if (i->IsSelected()) {
+                auto result = m_concerter.StartConvent(*m_savedPaths.Get(i->GetPath()));
+                switch (result)
+                {
+                case Concerter::Succuess:
 
-        for (auto& item : m_paths) {
-            DBG("path: " << item->filePath << " shoudDo: " << (item->shouldDoConvente ? "yes" : "no"));
+                    i->SetStatus(itemInList::ConvertStauts::Complete);
 
-            if (item->shouldDoConvente) {
-                auto result = m_concerter.StartConvent(item->filePath);
+                    break;
+                case Concerter::UnknowSkelVersion:
 
-                /* 逆天 */
-                auto * itemToDisable = m_list->GetItem(m_paths.indexOf(item));
-                if (result == Concerter::Error::Succuess) {
-                    itemToDisable->GetToggleButton().setToggleState(false, juce::sendNotification);
-                    itemToDisable->SetComplete(true);
-                    itemToDisable->SetInfoText(L"转换完成");
-                }
-                else if (result == Concerter::Error::ProcessLaunchFailed) {
-                    itemToDisable->SetInfoText(L"转换失败：无法打开进程");
-                }
-                else if (result == Concerter::Error::UnknowSkelVersion) {
-                    itemToDisable->SetInfoText(L"转换失败：未知skel版本");
+                    i->SetStatus(itemInList::ConvertStauts::CannotFindConventer);
+
+                    break;
+                case Concerter::ProcessLaunchFailed:
+
+                    i->SetStatus(itemInList::ConvertStauts::FailedLaunchProcess);
+
+                    break;
                 }
             }
         }
@@ -134,7 +135,7 @@ void FileWindows::resized()
 {
     // This method is where you should set the bounds of any child
     // components that your component contains..
-    m_list->setBounds(0, 0, getWidth() - 100, itemHeight * m_list->GetNumItems());
+    m_list->setBounds(0, 0, getWidth() - 100, m_list->getHeight());
     m_pathList.setBounds(m_list->getBounds().withHeight(getHeight()));
 
     juce::Rectangle<int> bound(getWidth() - 100, 0, 100, 60);
@@ -175,32 +176,32 @@ void FileWindows::filesDropped(const juce::StringArray& files, int x, int y)
     }
 }
 
-void FileWindows::ItemToggleChanged(int indexOfComponent, bool state)
-{
-    m_paths[indexOfComponent]->shouldDoConvente = state;
-}
-
-void FileWindows::ItemTextChanged(int indexOfComponent, juce::String text)
-{
-    m_paths[indexOfComponent]->filePath = text;
-}
-
-void FileWindows::ItemButtonChanged(int indexOfComponent)
-{
-
-}
-
-void FileWindows::ItemAdded(juce::String text)
-{
-    m_paths.add(new itemList::Path{ text,true });
-    resized();
-}
-
-void FileWindows::ItemDeleted(int indexOfComponenet)
-{
-    m_paths.remove(indexOfComponenet);
-    resized();
-}
+//void FileWindows::ItemToggleChanged(int indexOfComponent, bool state)
+//{
+//    m_paths[indexOfComponent]->shouldDoConvente = state;
+//}
+//
+//void FileWindows::ItemTextChanged(int indexOfComponent, juce::String text)
+//{
+//    m_paths[indexOfComponent]->filePath = text;
+//}
+//
+//void FileWindows::ItemButtonChanged(int indexOfComponent)
+//{
+//
+//}
+//
+//void FileWindows::ItemAdded(juce::String text)
+//{
+//    m_paths.add(new itemList::Path{ text,true });
+//    resized();
+//}
+//
+//void FileWindows::ItemDeleted(int indexOfComponenet)
+//{
+//    m_paths.remove(indexOfComponenet);
+//    resized();
+//}
 
 void FileWindows::SetConventerText()
 {

@@ -14,13 +14,13 @@
 #include <algorithm>
 #include "Concerter.h"
 #include "itemList.h"
+#include "storger.h"
 
 //==============================================================================
 /*
 */
 class FileWindows  : public juce::Component,
-                     public juce::FileDragAndDropTarget,
-                     public itemList::Listener
+                     public juce::FileDragAndDropTarget
 {
 public:
     FileWindows(Concerter& concerter);
@@ -34,19 +34,13 @@ public:
     void filesDropped(const juce::StringArray& files, int x, int y);
 
     //==============================================================================
-    void ItemToggleChanged(int indexOfComponent, bool state) override;
-    void ItemTextChanged(int indexOfComponent, juce::String text) override;
-    void ItemButtonChanged(int indexOfComponent) override;
-    void ItemAdded(juce::String text) override;
-    void ItemDeleted(int indexOfComponenet) override;
-
-    //==============================================================================
     void SetConventerText();
 
     //==============================================================================
     Concerter& m_concerter;
     itemList* m_list;
-    juce::OwnedArray<itemList::Path> m_paths;
+    /*juce::OwnedArray<itemList::Path> m_paths;*/
+    storger m_savedPaths;
     juce::Viewport m_pathList;
 
     //==============================================================================

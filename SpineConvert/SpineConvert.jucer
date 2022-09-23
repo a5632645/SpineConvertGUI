@@ -4,14 +4,17 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="rMixxV" name="SpineConvert">
     <GROUP id="{A48F861F-0535-5AD7-8DBA-CFD03BDEFB40}" name="Source">
-      <FILE id="dVfX0R" name="Concerter.cpp" compile="1" resource="0" file="Source/Concerter.cpp"/>
-      <FILE id="YdS4NS" name="Concerter.h" compile="0" resource="0" file="Source/Concerter.h"/>
-      <FILE id="xwWUuh" name="FileWindows.cpp" compile="1" resource="0" file="Source/FileWindows.cpp"/>
-      <FILE id="jyZywe" name="FileWindows.h" compile="0" resource="0" file="Source/FileWindows.h"/>
-      <FILE id="rhM0yW" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-      <FILE id="SmPTRJ" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
-      <FILE id="XRs2sW" name="MainComponent.cpp" compile="1" resource="0"
+      <FILE id="P4SZqU" name="Concerter.cpp" compile="1" resource="0" file="Source/Concerter.cpp"/>
+      <FILE id="gvQ7P6" name="Concerter.h" compile="0" resource="0" file="Source/Concerter.h"/>
+      <FILE id="cmwvMB" name="FileWindows.cpp" compile="1" resource="0" file="Source/FileWindows.cpp"/>
+      <FILE id="KSLYSv" name="FileWindows.h" compile="0" resource="0" file="Source/FileWindows.h"/>
+      <FILE id="CCg7WQ" name="itemList.cpp" compile="1" resource="0" file="Source/itemList.cpp"/>
+      <FILE id="a8JNsb" name="itemList.h" compile="0" resource="0" file="Source/itemList.h"/>
+      <FILE id="glXn43" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="PS2MMu" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
+      <FILE id="weLJR3" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="DVpm1o" name="storger.h" compile="0" resource="0" file="Source/storger.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>

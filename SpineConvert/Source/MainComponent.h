@@ -32,7 +32,6 @@ private:
     // Your private member variables go here...
     std::unique_ptr<FileWindows> m_workPlace;
     std::unique_ptr<ChineseLookAndFeel> m_laf;
-    Concerter m_concerter;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

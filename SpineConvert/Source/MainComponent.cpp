@@ -3,7 +3,7 @@
 
 //==============================================================================
 MainComponent::MainComponent()
-    :m_laf(new ChineseLookAndFeel), m_workPlace(new FileWindows(m_concerter))
+    :m_laf(new ChineseLookAndFeel), m_workPlace(new FileWindows)
 {
     juce::Desktop::getInstance().setDefaultLookAndFeel(m_laf.get());
 

@@ -26,17 +26,24 @@ public:
     struct Process
     {
         bool state;
-        STARTUPINFO startUpInfo;
+        STARTUPINFOW startUpInfo;
         PROCESS_INFORMATION processInfo;
     };
 
-    Concerter() = default;
-    ~Concerter() = default;
+    Concerter();
+    ~Concerter();
 
     static void UpdateConventers();
 
     Error StartConvent(storger::Path& p);
     static int GetSkelVersion(juce::StringRef filePath);
     inline static bool IsExistConverter(int version);
+
+    void SetOutputFolder();
+    juce::String& GetOutputPath() { return m_outputPath; }
+
+    std::function<void(const juce::String& newPath)> onOutFolderChanged;
 private:
+    std::unique_ptr<juce::FileChooser> m_chooser;
+    juce::String m_outputPath;
 };

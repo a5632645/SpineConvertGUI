@@ -14,8 +14,8 @@
 extern std::unordered_map<int, juce::String> g_TranslatorPath;
 
 //==============================================================================
-FileWindows::FileWindows(Concerter& concerter)
-    :m_concerter(concerter), m_list(new itemList(this->m_savedPaths)),
+FileWindows::FileWindows()
+    :m_list(new itemList(this->m_savedPaths)),
     m_add(L"添加文件"),
     m_antiSelect(L"反选"),
     m_cancelSelect(L"取消选择"),
@@ -24,6 +24,7 @@ FileWindows::FileWindows(Concerter& concerter)
     m_selectAll(L"全选"),
     m_showConventerFind(L"显示可用转换器"),
     m_updateConventers(L"重新寻找转换器"),
+    m_setOutputPath(L"设置输出目录"),
     m_isShowingAvaliableConventers(false)
 {
     // In your constructor, you should add any child components, and
@@ -40,6 +41,8 @@ FileWindows::FileWindows(Concerter& concerter)
     addAndMakeVisible(m_showConventerFind);
     addAndMakeVisible(m_updateConventers);
     addChildComponent(m_avaliableConventers);
+    addAndMakeVisible(m_setOutputPath);
+    addAndMakeVisible(m_outputPath);
 
     m_avaliableConventers.setReadOnly(true);
     m_avaliableConventers.setMultiLine(true, false);
@@ -55,6 +58,8 @@ FileWindows::FileWindows(Concerter& concerter)
         m_list->CancelAllSelect();
     };
     m_convert.onClick = [this]() {
+        EnableButtons(false);
+
         auto& items = m_list->GetItems();
         for (auto* i : items) {
             if (i->IsSelected()) {
@@ -79,6 +84,8 @@ FileWindows::FileWindows(Concerter& concerter)
                 }
             }
         }
+
+        EnableButtons(true);
     };
     m_removeSelect.onClick = [this]() {
         m_list->RemoveSelect();
@@ -106,9 +113,20 @@ FileWindows::FileWindows(Concerter& concerter)
         SetConventerText();
     };
 
+    m_setOutputPath.onClick = [this]() {
+        m_concerter.SetOutputFolder();
+    };
+
+    m_outputPath.setFont({ "Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain });
+
     /* 草，你每生成一个窗口就重新扫描一次是吧 */
     Concerter::UpdateConventers();
     SetConventerText();
+    SetOutputPath(juce::String());
+
+    m_concerter.onOutFolderChanged = [this](const juce::String& out) {
+        SetOutputPath(out);
+    };
 }
 
 FileWindows::~FileWindows()
@@ -127,7 +145,6 @@ void FileWindows::paint (juce::Graphics& g)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));   // clear the background
     g.setFont(juce::Font("Microsoft YaHei", 16, juce::Font::FontStyleFlags::plain));
     g.setColour(juce::Colours::white);
-    g.drawSingleLineText(L"红色->未完成 绿色->完成", 10, getHeight() - 16);
     g.drawSingleLineText(L"添加文件或者拖拽文件进入窗口", 10, getHeight() - 32);
 }
 
@@ -152,10 +169,15 @@ void FileWindows::resized()
     m_showConventerFind.setBounds(bound);
     bound.translate(0, 60);
     m_updateConventers.setBounds(bound);
+    bound.translate(0, 60);
+    m_setOutputPath.setBounds(bound);
     bound.translate(0, 100);
     m_convert.setBounds(bound);
 
     m_avaliableConventers.setBounds(m_pathList.getBounds());
+
+    constexpr auto lableHeight = 32;
+    m_outputPath.setBounds(0, getHeight() - lableHeight, getWidth(), lableHeight);
 }
 
 bool FileWindows::isInterestedInFileDrag(const juce::StringArray& files)
@@ -210,4 +232,28 @@ void FileWindows::SetConventerText()
         s << "ver: " << i.first << " path: " << i.second << '\n';
     }
     m_avaliableConventers.setText(s);
+}
+
+void FileWindows::SetOutputPath(const juce::String& folder)
+{
+    juce::String outfloder{ L"输出目录: " };
+    if (folder.isNotEmpty()) {
+        outfloder << folder;
+    }
+    else {
+        outfloder << L"输入文件旁边";
+    }
+    m_outputPath.setText(outfloder, juce::dontSendNotification);
+}
+
+//==============================================================================
+void FileWindows::EnableButtons(bool enable)
+{
+    m_add.setEnabled(enable);
+    m_antiSelect.setEnabled(enable);
+    m_cancelSelect.setEnabled(enable);
+    m_convert.setEnabled(enable);
+    m_removeSelect.setEnabled(enable);
+    m_selectAll.setEnabled(enable);
+    m_updateConventers.setEnabled(enable);
 }

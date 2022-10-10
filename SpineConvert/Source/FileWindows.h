@@ -23,7 +23,7 @@ class FileWindows  : public juce::Component,
                      public juce::FileDragAndDropTarget
 {
 public:
-    FileWindows(Concerter& concerter);
+    FileWindows();
     ~FileWindows() override;
 
     void paint (juce::Graphics&) override;
@@ -35,11 +35,14 @@ public:
 
     //==============================================================================
     void SetConventerText();
+    void SetOutputPath(const juce::String& folder);
 
     //==============================================================================
-    Concerter& m_concerter;
+    void EnableButtons(bool enable);
+
+    //==============================================================================
+    Concerter m_concerter;
     itemList* m_list;
-    /*juce::OwnedArray<itemList::Path> m_paths;*/
     storger m_savedPaths;
     juce::Viewport m_pathList;
 
@@ -54,6 +57,9 @@ public:
     juce::TextButton m_showConventerFind;
     juce::TextButton m_updateConventers;
     juce::TextEditor m_avaliableConventers;
+
+    juce::Label      m_outputPath;
+    juce::TextButton m_setOutputPath;
 
     bool m_isShowingAvaliableConventers;
 

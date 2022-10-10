@@ -10,10 +10,17 @@
 
 #include "Concerter.h"
 
-constexpr auto Bin35Path = L"D:\\files\\download\\compressed\\SpineConverter-main\\Bin35ToBin38\\bin\\Debug\\net5.0\\Bin35ToBin38.exe";
-constexpr auto Bin36Path = L"D:\\files\\download\\compressed\\SpineConverter-main\\Bin36ToBin38\\bin\\Debug\\net5.0\\Bin36ToBin38.exe";
-
 std::unordered_map<int, juce::String> g_TranslatorPath;
+
+Concerter::Concerter()
+    :m_chooser(new juce::FileChooser(L"输出文件夹"))
+{
+}
+
+Concerter::~Concerter()
+{
+    m_chooser = nullptr;
+}
 
 void Concerter::UpdateConventers()
 {
@@ -44,13 +51,32 @@ Concerter::Error Concerter::StartConvent(storger::Path& toConvert)
     juce::String pathWithSpaceBegin{ " " }; pathWithSpaceBegin << toConvert.filePath;
     /* after  : xxx.exe *.skel */
 
+    if (m_outputPath.isNotEmpty()) {
+
+        /* ?你输出命令不是应该是个文件名吗? */
+        juce::File f(toConvert.filePath);
+
+        juce::String outFileName{ "\\" };
+        outFileName << f.getFileNameWithoutExtension() << ".38" << ".skel";
+
+        pathWithSpaceBegin << ' ' << m_outputPath << outFileName;
+    }
+
     Process p;
     memset(&p, 0, sizeof(Process));
 
-    /*p.state = CreateProcessW(Bin35Path, pathWithSpaceBegin.toUTF16().getAddress(), nullptr, nullptr, false, CREATE_NEW_CONSOLE, nullptr, nullptr, &p.startUpInfo, &p.processInfo);
-    p.state = CreateProcessW(Bin36Path, pathWithSpaceBegin.toUTF16().getAddress(), nullptr, nullptr, false, CREATE_NEW_CONSOLE, nullptr, nullptr, &p.startUpInfo, &p.processInfo);
-    */
-    p.state = CreateProcessW(g_TranslatorPath[toConvert.version].toUTF16().getAddress(), pathWithSpaceBegin.toUTF16().getAddress(), nullptr, nullptr, false, CREATE_NEW_CONSOLE, nullptr, nullptr, &p.startUpInfo, &p.processInfo);
+    p.state = CreateProcessW(
+        g_TranslatorPath[toConvert.version].toUTF16().getAddress(), 
+        pathWithSpaceBegin.toUTF16().getAddress(),
+        nullptr, 
+        nullptr, 
+        false, 
+        CREATE_NEW_CONSOLE, 
+        nullptr, 
+        nullptr, 
+        &p.startUpInfo, 
+        &p.processInfo
+    );
 
     if (p.state) {
         WaitForSingleObject(p.processInfo.hProcess, INFINITE);
@@ -82,4 +108,27 @@ int Concerter::GetSkelVersion(juce::StringRef filePath)
 bool Concerter::IsExistConverter(int version)
 {
     return g_TranslatorPath.find(version) != g_TranslatorPath.end();
+}
+
+void Concerter::SetOutputFolder()
+{
+    using flags = juce::FileBrowserComponent::FileChooserFlags;
+    auto flag = flags::canSelectDirectories | flags::openMode;
+
+    m_chooser->launchAsync(flag, [this](const juce::FileChooser& c) mutable {
+
+        auto folder = c.getResult().getFullPathName();
+
+        if (folder.isNotEmpty()) {
+
+            m_outputPath = folder;
+
+            if (onOutFolderChanged) {
+                onOutFolderChanged(m_outputPath);
+            }
+
+        }
+        }
+
+    );
 }
